@@ -1,0 +1,33 @@
+2018-01-19 00:26:27 [scrapy.utils.log] INFO: Scrapy 1.4.0 started (bot: scrapybot)
+2018-01-19 00:26:27 [scrapy.utils.log] INFO: Overridden settings: {'NEWSPIDER_MODULE': 'zhihu_distributed_by_scrapyRedis.spiders', 'LOG_LEVEL': 'INFO', 'DUPEFILTER_CLASS': 'scrapy_redis.dupefilter.RFPDupeFilter', 'SPIDER_LOADER_WARN_ONLY': True, 'SPIDER_MODULES': ['zhihu_distributed_by_scrapyRedis.spiders'], 'LOG_ENCODING': 'UTF-8', 'SCHEDULER': 'scrapy_redis.scheduler.Scheduler', 'LOG_FILE': 'F:\\projects\\spidder\\zhihu_distributed_by_scrapyRedis\\zhihu_distributed_by_scrapyRedis/log/2018-1-19_running.log', 'DOWNLOAD_DELAY': 1.6}
+2018-01-19 00:26:27 [scrapy.middleware] INFO: Enabled extensions:
+['scrapy.extensions.logstats.LogStats',
+ 'scrapy.extensions.telnet.TelnetConsole',
+ 'scrapy.extensions.corestats.CoreStats']
+2018-01-19 00:26:27 [zhihuCrawlSpider] INFO: Reading start URLs from redis key 'zhihuCrawlSpider:start_urls' (batch size: 16, encoding: UTF-8
+2018-01-19 00:26:28 [scrapy.middleware] INFO: Enabled downloader middlewares:
+['scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware',
+ 'zhihu_distributed_by_scrapyRedis.middlewares.UserAgentsDownloaderMiddleware',
+ 'zhihu_distributed_by_scrapyRedis.middlewares.ProxiesDownloaderMiddleware',
+ 'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware',
+ 'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware',
+ 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware',
+ 'scrapy.downloadermiddlewares.retry.RetryMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware',
+ 'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware',
+ 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware',
+ 'scrapy.downloadermiddlewares.cookies.CookiesMiddleware',
+ 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware',
+ 'scrapy.downloadermiddlewares.stats.DownloaderStats']
+2018-01-19 00:26:28 [scrapy.middleware] INFO: Enabled spider middlewares:
+['scrapy.spidermiddlewares.httperror.HttpErrorMiddleware',
+ 'scrapy.spidermiddlewares.offsite.OffsiteMiddleware',
+ 'scrapy.spidermiddlewares.referer.RefererMiddleware',
+ 'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware',
+ 'scrapy.spidermiddlewares.depth.DepthMiddleware']
+2018-01-19 00:26:29 [scrapy.middleware] INFO: Enabled item pipelines:
+['zhihu_distributed_by_scrapyRedis.pipelines.ZhihuPipeline']
+2018-01-19 00:26:29 [scrapy.core.engine] INFO: Spider opened
+2018-01-19 00:26:29 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+2018-01-19 00:27:29 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+2018-01-19 00:28:29 [scrapy.extensions.logstats] INFO: Crawled 2 pages (at 2 pages/min), scraped 0 items (at 0 items/min)
