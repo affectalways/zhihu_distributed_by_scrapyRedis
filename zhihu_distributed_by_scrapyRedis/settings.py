@@ -59,20 +59,29 @@ MYSQL_PASSWORD = '970630'
 # 不知道下面有几个有效地
 # 设置代理池
 PROXIES = [
-    {'ip_port': '60.163.121.203:9000', 'name_password': None},
-    {'ip_port': '115.171.203.8:9000', 'name_password': None},
-    {'ip_port': '112.250.65.222:53281', 'name_password': None},
-    {'ip_port': '202.117.120.242:8080', 'name_password': None},
-    {'ip_port': '180.118.247.57:9000', 'name_password': None},
-    {'ip_port': '118.193.107.178:80', 'name_password': None},
-    {'ip_port': '222.74.225.231:3128', 'name_password': None},
-    {'ip_port': '111.3.108.44:8118', 'name_password': None},
-    {'ip_port': '118.254.150.150:3128', 'name_password': None},
-    {'ip_port': '115.226.9.2:3128', 'name_password': None},
-    {'ip_port': '121.8.243.51:8888', 'name_password': None},
-    {'ip_port': '114.99.94.232:9000', 'name_password': None},
-    {'ip_port': '120.27.195.59:9999', 'name_password': None},
-    {'ip_port': '117.90.1.107:9000', 'name_password': None},
+    {'ip_port': '180.118.92.218:9000', 'name_password': None},
+    {'ip_port': '121.232.144.224:9000', 'name_password': None},
+    {'ip_port': '202.194.14.72:8118', 'name_password': None},
+    {'ip_port': '218.64.93.208:808', 'name_password': None},
+    {'ip_port': '117.43.1.182:808', 'name_password': None},
+    {'ip_port': '121.232.144.65:9000', 'name_password': None},
+    {'ip_port': '122.96.59.100:80', 'name_password': None},
+    {'ip_port': '121.69.70.182:8118', 'name_password': None},
+    {'ip_port': '163.125.250.167:8118', 'name_password': None},
+    {'ip_port': '121.232.199.227:9000', 'name_password': None},
+    {'ip_port': '115.159.0.178:808', 'name_password': None},
+    {'ip_port': '180.118.247.136:9000', 'name_password': None},
+    {'ip_port': '106.4.137.87:9000', 'name_password': None},
+    {'ip_port': '121.232.146.233:9000', 'name_password': None},
+    {'ip_port': '121.232.144.122:9000', 'name_password': None},
+    {'ip_port': '223.241.79.180:8010', 'name_password': None},
+    {'ip_port': '223.241.79.144:8010', 'name_password': None},
+    {'ip_port': '223.241.116.17:8010', 'name_password': None},
+    {'ip_port': '223.241.117.189:8010', 'name_password': None},
+    {'ip_port': '117.90.6.234:9000', 'name_password': None},
+    {'ip_port': '117.90.0.134:9000', 'name_password': None},
+    {'ip_port': '119.5.1.2:22', 'name_password': None},
+    {'ip_port': '180.119.65.123:3128', 'name_password': None},
 ]
 
 '''
@@ -125,5 +134,3 @@ DOWNLOADER_MIDDLEWARES = {
 ITEM_PIPELINES = {
     'zhihu_distributed_by_scrapyRedis.pipelines.ZhihuPipeline': 302,
 }
-
-
