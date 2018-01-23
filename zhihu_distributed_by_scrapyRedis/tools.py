@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import random
 import time
+
 import redis
-from scrapy.utils.project import get_project_settings
-import os
 from scrapy import log
-import logging
-import datetime
+from scrapy.utils.project import get_project_settings
+
 
 class Tools(object):
     # 获取验证码类型 及 url
@@ -25,6 +24,13 @@ class Tools(object):
         captcha_url = 'https://www.zhihu.com/' + 'captcha.gif?r=%d&type=login&lang=%s' % (now_time, lang)
         return lang, captcha_url
 
+    @staticmethod
+    def url_is_tuple(url):
+        isurl = url
+        if isinstance(url, tuple):
+            isurl = url[0]
+        return isurl
+
 
 '''
     需要修改，改成url_token，name,gender存到mongodb或者mysql数据库中
@@ -33,7 +39,7 @@ class Tools(object):
 '''
 
 
-class RedisConnection(object):
+class RedisConnection(redis.StrictRedis):
     def __init__(self):
         REDIS_HOST = get_project_settings().get('REDIS_HOST')
         REDIS_PORT = get_project_settings().get('REDIS_PORT')
@@ -43,6 +49,9 @@ class RedisConnection(object):
         # 存储request headers的内容，也就是z_c0，xsrf等等
         self.redis_connection = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0,
                                                   password=REDIS_AUTH['password'])
+
+    def lpush(self, name, *values):
+        self.redis_connection.lpush(name, *values)
 
     # set，mysql根据返回值判断值是否已经存在
     def set_url(self, url_token):
@@ -65,7 +74,7 @@ class RedisConnection(object):
             return url
         else:
             log.msg("所有用户数据已被获取完毕！！\n程序终止！", level=log.CRITICAL)
-            os._exit(0)
+            # os._exit(0)
 
     # 存储headers
     def set_headers(self, headers):
@@ -77,6 +86,17 @@ class RedisConnection(object):
         headers = self.redis_connection.get('headers')
         log.msg('从 headers(string)读取headers', level=log.INFO)
         return headers
+
+    # 保存cookies
+    def set_cookiejar(self, cookiejar):
+        log.msg('cookiejar(string)存入cookiejar', level=log.INFO)
+        self.redis_connection.set('cookiejar', cookiejar)
+
+    # 返回cookies
+    def get_cookiejar(self):
+        cookiejar = self.redis_connection.get('cookiejar')
+        log.msg('从cookiejar(string)读取cookiejar', level=log.INFO)
+        return cookiejar
 
 
 if __name__ == '__main__':
