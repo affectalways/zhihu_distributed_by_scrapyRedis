@@ -1,15 +1,20 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 import json
 import os
 import re
 import sys
-from scrapy import log
+
 import jsonpath
+# 将cookiejar转换成dict
+import requests
 import scrapy
+from scrapy import log
+from scrapy.http.cookies import CookieJar
 from scrapy.utils.project import get_project_settings
 from scrapy_redis.spiders import RedisSpider
 from zhihu_distributed_by_scrapyRedis.items import ZhihuItem
 from zhihu_distributed_by_scrapyRedis.tools import Tools, RedisConnection
+from redis import Redis
 
 reload(sys)
 sys.setdefaultencoding('UTF-8')
@@ -21,10 +26,28 @@ class ZhihuSpider(RedisSpider):
     redis_key = 'zhihu:start_urls'
 
     redisConnection = RedisConnection()
+    # 实例化一个CookieJar对象
+    cookiejar = CookieJar()
+
+    # ItemLoader
+    # zhIL = None
 
     def parse(self, response):
-        yield scrapy.Request('https://www.zhihu.com/signup?next=%2F', meta={'cookiejar': 1},
-                             callback=self.parse_first_open_page)
+        print '++++++++++++++++++++++++++++++++++++++++++++'
+        print response.url
+        if response.url.find('followers') == -1:
+            yield scrapy.Request('https://www.zhihu.com/signup?next=%2F', meta={'cookiejar': 1},
+                                 callback=self.parse_first_open_page)
+        else:
+            print '=' * 30
+            url_token = str(response.url).split('/')[-2]
+            yield scrapy.Request(response.url, callback=self.gather_follower,
+                                 cookies=eval(self.redisConnection.get_cookiejar()),
+                                 meta={
+                                     'count': 0,
+                                     'url_token': url_token,
+                                 },
+                                 )
 
     # login_LinkExtractor 调用的callback
     # 1.获取cookie
@@ -47,6 +70,7 @@ class ZhihuSpider(RedisSpider):
         )
 
     # 下载验证码
+    # 登录
     def download_captcha(self, response):
         file_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/images/captcha.jpg'
         with open(file_path, 'wb') as f:
@@ -60,15 +84,14 @@ class ZhihuSpider(RedisSpider):
                 'cookiejar': response.meta['cookiejar'],
                 # 作为第一个访问的url的标志
                 # 'SPECIFIED_FLAG': 1,
+                '_xsrf': response.meta['_xsrf'],
             },
             headers=get_project_settings().get('ZHIHU_HEADERS'),
             formdata={
                 'captcha_type': response.meta['captcha_type'],
-                # 'phone_num': str(raw_input('please input your phone_num:\n')),
-                'phone_num': '17864291830',
+                'phone_num': str(raw_input('please input your phone_num:\n')),
                 '_xsrf': response.meta['_xsrf'],
-                # 'password': str(raw_input('please input your password:\n')),
-                'password': 'yangshaoxuan0630',
+                'password': str(raw_input('please input your password:\n')),
                 'captcha': str(raw_input('please input captcha:\n'))
             },
             callback=self.visit_specified_url,
@@ -84,27 +107,35 @@ class ZhihuSpider(RedisSpider):
         get_project_settings().get('ZHIHU_HEADERS')['authorization'] = 'Bearer ' + authorization
         headers = get_project_settings().get('ZHIHU_HEADERS')
         self.redisConnection.set_headers(headers)
-
+        # 使用extract_cookies方法可以提取response中的cookie
+        self.cookiejar.extract_cookies(response, response.request)
+        # 给cookiejar添加_xsrf
+        requests.utils.add_dict_to_cookiejar(self.cookiejar, {'_xsrf': response.meta['_xsrf']})
+        # 将cookiejar添加到redis中
+        self.redisConnection.set_cookiejar(str(requests.utils.dict_from_cookiejar(self.cookiejar)))
         # 早先在url，url_set中存取第一个要访问的页面，从url中拿出来
         url_token = self.redisConnection.get_url()
         url = "https://www.zhihu.com/people/" + url_token + "/followers"
-        print url
+        # 因为程序运行时不时会出现获取的是tuple错误
+        url = Tools.url_is_tuple(url)
         # <class 'scrapy.http.headers.Headers'>
         # type(response.headers)
         # 记录headers，同时将这个headers调用tools的set_cookiejar方法，写入文件
+
         log.msg("正在访问 %s \n" % url, level=log.INFO)
         # 访问指定的某人的followers页面
         yield scrapy.Request(
             # 访问该页面
             url=url,
             meta={
-                'cookiejar': response.meta['cookiejar'],
+                # 'cookiejar': requests.utils.cookiejar_from_dict(eval(self.redisConnection.get_cookiejar())),
                 # 作为访问的特殊网页的标志，从而区分是访问的指定网页还是随机访问的！不要代码冗余嘛！思路！
                 'SPECIFIED_FLAG': 1,
                 'url_token': url_token,
                 'count': 0,
             },
             headers=headers,
+            cookies=eval(self.redisConnection.get_cookiejar()),
             callback=self.gather_follower,
         )
 
@@ -113,53 +144,27 @@ class ZhihuSpider(RedisSpider):
         followers_number = int(response.xpath(
             '//div[@class="Card FollowshipCard"]//a[last()]//strong/text()').extract()[0].replace(',', ''))
         page_number = followers_number / 20 + 1
-        if response.meta['SPECIFIED_FLAG'] == 1:
-            name = response.xpath(
-                '//h1[@class="ProfileHeader-title"]/span[@class="ProfileHeader-name"]/text()').extract()[
-                0]
-            gender = response.xpath(
-                '//div[@class="ProfileHeader-iconWrapper"]//*[name()="svg"]/@class').extract()
-
-            # 这其实不用判断，李开复是男的，以后的gender有点难判断
-            if len(gender) > 0:
-                # 1 为男， 0为 女
-                gender = 1 if gender[0].count('fe') > 0 else 0
-            else:
-                # 未标明性别
-                gender = -1
-            item = ZhihuItem()
-            item['url_token'], item['name'], item['gender'] = response.meta[
-                                                                  'url_token'], name, gender
-            yield item
 
         # 若关注人数为0，则从redis中取出另一个用户的url_token访问，callback=该方法
         # 若该用户的关注人数不是0，则访问json页面
         # 获取需要访问多少页json数据
         if not followers_number:
-            # 关注人数为0
             count = 0
             url_token = self.redisConnection.get_url()
             url = 'https://www.zhihu.com/people/' + url_token + '/followers',
+            url = Tools.url_is_tuple(url)
             log.msg('正在访问 %s\n' % url, level=log.INFO)
-            print 'gather follower+++++++++++++++++++++++++'
-            print url_token
-            print url
-            print type(url_token)
-            print type(url)
-            if isinstance(url, tuple):
-                url = url[0]
-            print '++++++++++++++++++++++++'
             yield scrapy.Request(
                 url=url,
                 meta={
-                    'cookiejar': response.meta['cookiejar'],
-                    'count': count,
-                    'SPECIFIED_FLAG': 0,
+                    'count': count
                 },
+                cookies=eval(self.redisConnection.get_cookiejar()),
                 headers=eval(self.redisConnection.get_headers()),
                 callback=self.gather_follower,
             )
         else:
+            print 'gather_followe'
             yield scrapy.FormRequest(
                 # 获取对应的json
                 url='https://www.zhihu.com/api/v4/members/' + response.meta['url_token'] + '/followers',
@@ -173,15 +178,18 @@ class ZhihuSpider(RedisSpider):
                 },
                 meta={
                     'page_number': page_number,
-                    'cookiejar': response.meta['cookiejar'],
+                    # 'cookiejar': response.meta['cookiejar'],
+                    # 'cookiejar': requests.utils.cookiejar_from_dict(eval(self.redisConnection.get_cookiejar())),
                     'count': response.meta['count'] + 1,
                     'url_token': response.meta['url_token'],
                 },
+                cookies=eval(self.redisConnection.get_cookiejar()),
                 callback=self.gather_json_info,
             )
 
     # 冗余代码一个是从网页中获取数据，一个是从json中获取数据gather_json_info
     def gather_json_info(self, response):
+        print '00000000000000000000000000000000000000'
         json_content = json.loads(response.body)
         urls = jsonpath.jsonpath(json_content, '$..data..url_token')
         names = jsonpath.jsonpath(json_content, '$..data..name')
@@ -193,47 +201,28 @@ class ZhihuSpider(RedisSpider):
             else:
                 item = ZhihuItem()
                 item['url_token'], item['name'], item['gender'] = redis_key_url, redis_field_name, redis_field_gender
+                url = 'https://www.zhihu.com/people/' + redis_key_url + '/followers'
+                self.redisConnection.lpush('zhihu:start_urls', url)
                 yield item
 
-                # 添加进来试试，看看合适不！！！！！！！！！
-                # 明显表示不行，仅仅是为了
-                count = 0
-                # url_token = self.redisConnection.get_url()
-                print 'gather_json_info********************'
-                print redis_key_url
-                url = 'https://www.zhihu.com/people/' + redis_key_url.encode('UTF-8') + '/followers'
-                print type(redis_key_url)
-                print type(url)
-                print '**********************'
-                log.msg('正在访问 %s \n' % url, level=log.INFO)
-                yield scrapy.Request(
-                    # 访问其他人的首页
-                    url=url,
-                    meta={
-                        'cookiejar': response.meta['cookiejar'],
-                        'url_token': redis_key_url.encode('UTF-8'),
-                        'count': count,
-                        'SPECIFIED_FLAG': 0,
-                    },
-                    headers=eval(self.redisConnection.get_headers()),
-                    callback=self.gather_follower,
-                )
-
+        # 判断是否进行下一次json页面的获取Request
         if response.meta['count'] >= response.meta['page_number']:
-            # 访问另一个用户的followers页面
             count = 0
+            # 从数据库中读取，但是这就需要最开始访问关注人数特别多的用户
             url_token = self.redisConnection.get_url()
             url = 'https://www.zhihu.com/people/' + url_token + '/followers'
+            url = Tools.url_is_tuple(url)
             log.msg('正在访问 %s \n' % url, level=log.INFO)
             yield scrapy.Request(
                 # 访问其他人的首页
                 url=url,
                 meta={
-                    'cookiejar': response.meta['cookiejar'],
+                    # 'cookiejar': response.meta['cookiejar'],
+                    # 'cookiejar': requests.utils.cookiejar_from_dict(eval(self.redisConnection.get_cookiejar())),
                     'url_token': url_token,
                     'count': count,
-                    'SPECIFIED_FLAG': 0,
                 },
+                cookies=eval(self.redisConnection.get_cookiejar()),
                 headers=eval(self.redisConnection.get_headers()),
                 callback=self.gather_follower,
             )
@@ -250,10 +239,12 @@ class ZhihuSpider(RedisSpider):
                     'limit': '20',
                 },
                 meta={
-                    'cookiejar': response.meta['cookiejar'],
+                    # 'cookiejar': response.meta['cookiejar'],
+                    # 'cookiejar': requests.utils.cookiejar_from_dict(eval(self.redisConnection.get_cookiejar())),
                     'page_number': response.meta['page_number'],
                     'count': response.meta['count'] + 1,
                     'url_token': response.meta['url_token'],
                 },
+                cookies=eval(self.redisConnection.get_cookiejar()),
                 callback=self.gather_json_info,
             )
