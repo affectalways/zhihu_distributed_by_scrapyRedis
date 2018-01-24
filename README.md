@@ -1,5 +1,5 @@
 # zhihu_distributed_by_scrapyRedis
-利用scrapy_redis爬取知乎
+利用scrapy_redis爬取知乎，分布式爬虫
 
 利用技术：
     1.scrapy_redis
