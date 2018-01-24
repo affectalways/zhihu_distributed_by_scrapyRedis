@@ -9,6 +9,8 @@ import datetime
 # 日志路径
 import os
 
+ROBOTSTXT_OBEY = False
+
 SPIDER_MODULES = ['zhihu_distributed_by_scrapyRedis.spiders']
 NEWSPIDER_MODULE = 'zhihu_distributed_by_scrapyRedis.spiders'
 
@@ -27,31 +29,32 @@ ITEM_PIPELINES = {
     'zhihu_distributed_by_scrapyRedis.pipelines.RedisPipeline': 400,
 }
 
-LOG_LEVEL = 'DEBUG'
 
 # Introduce an artifical delay to make use of parallelism. to speed up the
 # crawl.
-DOWNLOAD_DELAY = 1.6
+# DOWNLOAD_DELAY = random.randint(0,4) + round(random.random(), 1)
+# 设置的有点低
+DOWNLOAD_DELAY = 1.9
 
 '''
     redis
 '''
-REDIS_HOST = '101.132.163.103'
+REDIS_HOST = '****************'
 # REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6379
 REDIS_PARAMS = {}
-REDIS_PARAMS['password'] = '970630'
+REDIS_PARAMS['password'] = '************'
 REDIS_ENCODING = "UTF-8"
-REDIS_AUTH = {'password': '970630'}
+REDIS_AUTH = {'password': '**********'}
 
 '''
     Mysql
 '''
-MYSQL_HOST = '101.132.163.103'
+MYSQL_HOST = '***************'
 MYSQL_PORT = 3306
 MYSQL_DATABASE = 'zhihu'
 MYSQL_USER = 'root'
-MYSQL_PASSWORD = '970630'
+MYSQL_PASSWORD = '******'
 
 '''
     代理池
@@ -80,7 +83,6 @@ PROXIES = [
     {'ip_port': '223.241.117.189:8010', 'name_password': None},
     {'ip_port': '117.90.6.234:9000', 'name_password': None},
     {'ip_port': '117.90.0.134:9000', 'name_password': None},
-    {'ip_port': '119.5.1.2:22', 'name_password': None},
     {'ip_port': '180.119.65.123:3128', 'name_password': None},
 ]
 
