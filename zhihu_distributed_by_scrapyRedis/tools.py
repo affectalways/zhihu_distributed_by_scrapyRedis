@@ -39,7 +39,7 @@ class Tools(object):
 '''
 
 
-class RedisConnection(redis.StrictRedis):
+class RedisConnection(object):
     def __init__(self):
         REDIS_HOST = get_project_settings().get('REDIS_HOST')
         REDIS_PORT = get_project_settings().get('REDIS_PORT')
@@ -47,8 +47,11 @@ class RedisConnection(redis.StrictRedis):
         # 使用redis数据库
         # 存储url_token（set类型）去重，以便存储到MySQL中没有重复的
         # 存储request headers的内容，也就是z_c0，xsrf等等
-        self.redis_connection = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0,
-                                                  password=REDIS_AUTH['password'])
+        # redis://[:password]@localhost:6379/0
+        pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_AUTH['password'])
+        self.redis_connection = redis.StrictRedis(connection_pool=pool)
+        # self.redis_connection = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_AUTH['password'],
+        #                                           db=0)
 
     def lpush(self, name, *values):
         self.redis_connection.lpush(name, *values)
@@ -62,15 +65,15 @@ class RedisConnection(redis.StrictRedis):
         # list存储url_token，但是中途会读取pop，所以需要set去重
         if flag == 1:
             log.msg('url(list)正在放入 %s' % url_token, level=log.INFO)
-            self.redis_connection.lpush('url', url_token)
+            # self.redis_connection.lpush('url', url_token)
         return flag
 
     def get_url(self):
-        if self.redis_connection.llen('url'):
+        if self.redis_connection.llen('zhihu:start_urls'):
             # str类型
             # type(self.redis_url_connection.spop('url'))
-            url = self.redis_connection.lpop('url')
-            log.msg('url(list)中lpop出 %s' % url, level=log.INFO)
+            url = self.redis_connection.lpop('zhihu:start_urls')
+            log.msg('zhihu:start_urls (list)中lpop出 %s' % url, level=log.INFO)
             return url
         else:
             log.msg("所有用户数据已被获取完毕！！\n程序终止！", level=log.CRITICAL)
